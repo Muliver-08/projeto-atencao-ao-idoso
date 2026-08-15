@@ -44,7 +44,8 @@ class Medicamento(Base):
 
     @property
     def atrasado(self) -> bool:
-        limite = self.proximo_horario_previsto + timedelta(
-            minutes=TOLERANCIA_ATRASO_MINUTOS
-        )
+        previsto = self.proximo_horario_previsto
+        if previsto < self.criado_em:
+            return False
+        limite = previsto + timedelta(minutes=TOLERANCIA_ATRASO_MINUTOS)
         return datetime.now() > limite
