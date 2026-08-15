@@ -7,7 +7,7 @@ from alembic import context
 
 from app.config import settings
 from app.models.base import Base
-from app.models import idoso, cuidador  # noqa: F401  (registram as tabelas em Base.metadata)
+from app.models import idoso, cuidador, medicamento, interacao  # noqa: F401  (registram as tabelas em Base.metadata)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
