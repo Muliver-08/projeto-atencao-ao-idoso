@@ -5,14 +5,25 @@ from fastapi.testclient import TestClient
 from app.models.medicamento import calcular_horario_previsto
 
 
+def _cadastrar_e_logar(client: TestClient, nome: str, email: str) -> int:
+    cuidador = client.post(
+        "/cuidadores",
+        json={
+            "nome": nome,
+            "telefone": "(51) 99999-9999",
+            "email": email,
+            "senha": "senha123",
+        },
+    ).json()
+    client.post("/sessao/login", json={"email": email, "senha": "senha123"})
+    return cuidador["id"]
+
+
 def _criar_idoso_cuidador_medicamento_vinculado(client: TestClient) -> dict:
+    cuidador_id = _cadastrar_e_logar(client, "Cuidador Dose", "cuidador.dose@example.com")
     idoso = client.post(
         "/idosos", json={"nome": "Idoso Dose", "data_nascimento": "1950-01-01"}
     ).json()
-    cuidador = client.post(
-        "/cuidadores", json={"nome": "Cuidador Dose", "telefone": "(51) 99999-9999"}
-    ).json()
-    client.post(f"/idosos/{idoso['id']}/cuidadores/{cuidador['id']}")
     medicamento = client.post(
         f"/idosos/{idoso['id']}/medicamentos",
         json={
@@ -23,17 +34,15 @@ def _criar_idoso_cuidador_medicamento_vinculado(client: TestClient) -> dict:
             "frequencia_horas": 8,
         },
     ).json()["medicamento"]
-    client.post("/sessao", json={"cuidador_id": cuidador["id"]})
     return {
         "idoso_id": idoso["id"],
-        "cuidador_id": cuidador["id"],
+        "cuidador_id": cuidador_id,
         "medicamento_id": medicamento["id"],
     }
 
 
 def test_confirmar_dose_sem_cuidador_selecionado_retorna_401(client: TestClient) -> None:
     contexto = _criar_idoso_cuidador_medicamento_vinculado(client)
-    client.post("/sessao", json={"cuidador_id": contexto["cuidador_id"]})
     # remove a sessão criando um client novo sem cookies
     client_sem_sessao = TestClient(client.app)
     resposta = client_sem_sessao.post(
@@ -44,10 +53,7 @@ def test_confirmar_dose_sem_cuidador_selecionado_retorna_401(client: TestClient)
 
 def test_confirmar_dose_sem_vinculo_retorna_403(client: TestClient) -> None:
     contexto = _criar_idoso_cuidador_medicamento_vinculado(client)
-    outro_cuidador = client.post(
-        "/cuidadores", json={"nome": "Outro Cuidador Dose", "telefone": "(51) 98888-8888"}
-    ).json()
-    client.post("/sessao", json={"cuidador_id": outro_cuidador["id"]})
+    _cadastrar_e_logar(client, "Outro Cuidador Dose", "outro.dose@example.com")
 
     resposta = client.post(f"/medicamentos/{contexto['medicamento_id']}/doses", json={})
 

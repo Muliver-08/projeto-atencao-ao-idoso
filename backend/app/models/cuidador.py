@@ -21,6 +21,8 @@ class Cuidador(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str]
     telefone: Mapped[str]
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    senha_hash: Mapped[str]
     criado_em: Mapped[datetime] = mapped_column(server_default=func.now())
     criado_por_cuidador_id: Mapped[int | None] = mapped_column(
         ForeignKey("cuidadores.id")

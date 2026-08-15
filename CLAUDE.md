@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Code exists. `backend/` (FastAPI) and `frontend-v2/` (the live frontend) are the real application. `frontend/` was an earlier Vite + react-router scaffold and has been removed — `frontend-v2` (a Lovable-generated TanStack Start app) is now the sole frontend; don't reference the old `frontend/` folder or its tooling (pnpm, react-router, base-ui).
+Code exists. `backend/` (FastAPI) and `frontend/` (a Lovable-generated TanStack Start app) are the real application. An earlier Vite + react-router scaffold (previously at `frontend/`, then `frontend-v2/`) has been removed — don't reference its tooling (pnpm, react-router, base-ui, port 5173).
 
 ## What this project is
 
@@ -13,11 +13,11 @@ A medication-tracking app for elderly care, built for the Hackathon IFRS Campus 
 Core differentiator: a medication diary shared across multiple caregivers for the same elderly person, with automatic drug-interaction checking (against a curated internal dataset, not an external API) and duplicate-dose blocking (if one caregiver already confirmed a dose, others are blocked and told who/when).
 
 ### Actual stack
-- Frontend (`frontend-v2/`): React 19 + TanStack Start (SSR, file-based routing) + Tailwind CSS v4 + Radix UI (shadcn-style components), npm as package manager. Dev server is pinned to port 8080 by the Lovable Vite config (`@lovable.dev/vite-tanstack-config`) — don't fight it with a custom `server.port`.
+- Frontend (`frontend/`): React 19 + TanStack Start (SSR, file-based routing) + Tailwind CSS v4 + Radix UI (shadcn-style components), npm as package manager. Dev server is pinned to port 8080 by the Lovable Vite config (`@lovable.dev/vite-tanstack-config`) — don't fight it with a custom `server.port`.
 - Backend (`backend/`): Python + FastAPI + SQLAlchemy 2.0, deployed on Render as a continuous Web Service (**not** Vercel serverless — cold starts/timeouts break Postgres connections)
 - Database: PostgreSQL 17, managed by Render in production
 - Frontend and backend are deployed separately with distinct URLs, communicating over HTTP via `VITE_API_URL` (frontend) / `CORS_ORIGIN` (backend, must match the deployed frontend origin exactly)
-- Color palette (light mode, defined in `frontend-v2/src/styles.css`): `#B7DDE3` azul-claro, `#2a4a74` azul-marinho, `#D2E6C5` verde-claro, `#3094B5` azul-petróleo, `#1251BC` azul-forte (primary)
+- Color palette (light mode, defined in `frontend/src/styles.css`): `#B7DDE3` azul-claro, `#2a4a74` azul-marinho, `#D2E6C5` verde-claro, `#3094B5` azul-petróleo, `#1251BC` azul-forte (primary)
 
 ### Non-negotiable business rules to preserve in any implementation
 - RN07–RN15 (drug-interaction check + duplicate-dose blocking) is the core of the product — prioritize this over everything else if time is short.

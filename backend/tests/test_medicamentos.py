@@ -3,6 +3,16 @@ from sqlalchemy.orm import Session
 
 
 def _criar_idoso(client: TestClient) -> int:
+    client.post(
+        "/cuidadores",
+        json={
+            "nome": "Ana",
+            "telefone": "(51) 99999-9999",
+            "email": "ana@example.com",
+            "senha": "senha123",
+        },
+    )
+    client.post("/sessao/login", json={"email": "ana@example.com", "senha": "senha123"})
     resposta = client.post(
         "/idosos", json={"nome": "Idoso Teste", "data_nascimento": "1950-01-01"}
     )

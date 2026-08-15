@@ -33,9 +33,15 @@ def confirmar_dose(
 
 
 @router.get("/idosos/{idoso_id}/doses", response_model=list[RegistroDoseRead])
-def listar_doses(idoso_id: int, db: Session = Depends(get_db)) -> list[RegistroDoseRead]:
+def listar_doses(
+    idoso_id: int,
+    db: Session = Depends(get_db),
+    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
+) -> list[RegistroDoseRead]:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
-        idoso_service.obter_idoso(db, idoso_id)
+        idoso_service.obter_idoso(db, idoso_id, cuidador_atual_id)
         return registro_dose_service.listar_doses(db, idoso_id)
     except HTTPException:
         raise
