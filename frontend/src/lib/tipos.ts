@@ -5,6 +5,8 @@ export interface Cuidador {
   nome: string;
   telefone: string;
   email: string;
+  /** Presente quando o cuidador vem de dentro de Idoso.cuidadores: é quem cadastrou o idoso. */
+  eh_dono?: boolean;
 }
 
 export type StatusConvite = "pendente" | "aceito" | "recusado";
@@ -53,6 +55,17 @@ export interface Dose {
   confirmado_em: string;
   observacao?: string | null;
   cuidador: Cuidador;
+}
+
+export type TipoEventoVinculo = "saiu" | "removido";
+
+export interface EventoVinculo {
+  id: number;
+  idoso_id: number;
+  cuidador: Cuidador;
+  tipo_evento: TipoEventoVinculo;
+  realizado_por: Cuidador | null;
+  criado_em: string;
 }
 
 export interface NovoMedicamento {

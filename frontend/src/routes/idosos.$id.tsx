@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlarmClock, CheckCircle2, Clock, Info, Pill, Trash2, UserPlus } from "lucide-react";
+import {
+  AlarmClock,
+  CheckCircle2,
+  Clock,
+  Info,
+  LogOut,
+  Pill,
+  Trash2,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { AvisoErro, Carregando, Enviando, Vazio } from "@/components/estados";
@@ -21,7 +31,15 @@ import {
 import { ApiError, api, mensagemDeErro } from "@/lib/api";
 import { useCuidador } from "@/lib/cuidador-contexto";
 import { dataHora, emailValido, hora, horaValida } from "@/lib/formato";
-import type { Cuidador, Dose, Idoso, Interacao, Medicamento, NovoMedicamento } from "@/lib/tipos";
+import type {
+  Cuidador,
+  Dose,
+  EventoVinculo,
+  Idoso,
+  Interacao,
+  Medicamento,
+  NovoMedicamento,
+} from "@/lib/tipos";
 
 export const Route = createFileRoute("/idosos/$id")({
   head: () => ({
@@ -50,6 +68,7 @@ function DetalheIdoso() {
   const [idoso, setIdoso] = useState<Idoso | null>(null);
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([]);
   const [doses, setDoses] = useState<Dose[]>([]);
+  const [eventosVinculo, setEventosVinculo] = useState<EventoVinculo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -57,14 +76,16 @@ function DetalheIdoso() {
     setCarregando(true);
     setErro(null);
     try {
-      const [i, m, d] = await Promise.all([
+      const [i, m, d, ev] = await Promise.all([
         api.obterIdoso(idosoId),
         api.listarMedicamentos(idosoId),
         api.listarDoses(idosoId),
+        api.listarHistoricoVinculo(idosoId),
       ]);
       setIdoso(i);
       setMedicamentos(m);
       setDoses(d);
+      setEventosVinculo(ev);
     } catch (e) {
       setErro(mensagemDeErro(e));
     } finally {
@@ -145,11 +166,11 @@ function DetalheIdoso() {
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
-          <Historico doses={doses} medicamentos={medicamentos} />
+          <Historico doses={doses} medicamentos={medicamentos} eventosVinculo={eventosVinculo} />
         </TabsContent>
 
         <TabsContent value="cuidadores" className="mt-4">
-          <AbaCuidadores idoso={idoso} aoConvidar={carregar} />
+          <AbaCuidadores idoso={idoso} cuidadorAtual={cuidadorAtual} aoAtualizar={carregar} />
         </TabsContent>
       </Tabs>
     </div>
@@ -508,11 +529,21 @@ function FormMedicamento({
 
 /* ---------- cuidadores vinculados ---------- */
 
-function AbaCuidadores({ idoso, aoConvidar }: { idoso: Idoso; aoConvidar: () => Promise<void> }) {
+function AbaCuidadores({
+  idoso,
+  cuidadorAtual,
+  aoAtualizar,
+}: {
+  idoso: Idoso;
+  cuidadorAtual: Cuidador | null;
+  aoAtualizar: () => Promise<void>;
+}) {
   const [email, setEmail] = useState("");
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [removendoId, setRemovendoId] = useState<number | null>(null);
   const vinculados = idoso.cuidadores ?? [];
+  const souDono = vinculados.some((c) => c.id === cuidadorAtual?.id && c.eh_dono);
 
   async function convidar(e: FormEvent) {
     e.preventDefault();
@@ -523,11 +554,26 @@ function AbaCuidadores({ idoso, aoConvidar }: { idoso: Idoso; aoConvidar: () => 
       await api.criarConvite(idoso.id, email.trim());
       setEmail("");
       toast.success("Convite enviado.");
-      await aoConvidar();
+      await aoAtualizar();
     } catch (e) {
       setErroForm(mensagemDeErro(e));
     } finally {
       setEnviando(false);
+    }
+  }
+
+  async function desvincular(c: Cuidador) {
+    setRemovendoId(c.id);
+    try {
+      await api.desvincularCuidador(idoso.id, c.id);
+      toast.success(
+        c.id === cuidadorAtual?.id ? "Você saiu deste idoso." : `${c.nome} foi removido.`,
+      );
+      await aoAtualizar();
+    } catch (e) {
+      toast.error(mensagemDeErro(e));
+    } finally {
+      setRemovendoId(null);
     }
   }
 
@@ -540,16 +586,47 @@ function AbaCuidadores({ idoso, aoConvidar }: { idoso: Idoso; aoConvidar: () => 
         />
       ) : (
         <ul className="space-y-3">
-          {vinculados.map((c) => (
-            <li key={c.id}>
-              <Card>
-                <CardContent className="py-4">
-                  <p className="text-lg font-semibold">{c.nome}</p>
-                  <p className="text-base text-muted-foreground">{c.telefone}</p>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
+          {vinculados.map((c) => {
+            const souEu = c.id === cuidadorAtual?.id;
+            const podeAgir = souEu || (souDono && !c.eh_dono);
+            return (
+              <li key={c.id}>
+                <Card>
+                  <CardContent className="flex items-center justify-between gap-3 py-4">
+                    <div>
+                      <p className="text-lg font-semibold">
+                        {c.nome}
+                        {c.eh_dono && (
+                          <span className="ml-2 text-sm font-normal text-muted-foreground">
+                            (cadastrou este idoso)
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-base text-muted-foreground">{c.telefone}</p>
+                    </div>
+                    {podeAgir && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={removendoId === c.id}
+                        onClick={() => void desvincular(c)}
+                      >
+                        {souEu ? (
+                          <>
+                            <LogOut className="size-4" aria-hidden /> Sair
+                          </>
+                        ) : (
+                          <>
+                            <UserMinus className="size-4" aria-hidden /> Remover
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
 

@@ -26,3 +26,7 @@ class CuidadorRead(BaseModel):
 class CuidadorLogin(BaseModel):
     email: EmailStr
     senha: str
+
+
+class CuidadorVinculado(CuidadorRead):
+    eh_dono: bool

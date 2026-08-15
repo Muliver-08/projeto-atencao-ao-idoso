@@ -2,6 +2,7 @@ import type {
   Convite,
   Cuidador,
   Dose,
+  EventoVinculo,
   Idoso,
   Interacao,
   Medicamento,
@@ -76,6 +77,7 @@ interface EstadoDemo {
   medicamentos: Medicamento[];
   doses: Dose[];
   convites: Convite[];
+  historicoVinculo: EventoVinculo[];
   cuidadorAtual: number | null;
 }
 
@@ -88,6 +90,7 @@ const cuidadores: Cuidador[] = [
 export const estado: EstadoDemo = {
   cuidadores,
   convites: [],
+  historicoVinculo: [],
   cuidadorAtual: null,
   idosos: [
     {
@@ -96,7 +99,10 @@ export const estado: EstadoDemo = {
       data_nascimento: "1941-03-12",
       idade: 85,
       observacoes: "Hipertensa, usa marcapasso. Dificuldade para engolir comprimidos grandes.",
-      cuidadores: [cuidadores[0]!, cuidadores[1]!],
+      cuidadores: [
+        { ...cuidadores[0]!, eh_dono: true },
+        { ...cuidadores[1]!, eh_dono: false },
+      ],
     },
     {
       id: 2,
@@ -104,7 +110,7 @@ export const estado: EstadoDemo = {
       data_nascimento: "1948-09-30",
       idade: 77,
       observacoes: "Diabético tipo 2. Mora com a filha.",
-      cuidadores: [cuidadores[2]!],
+      cuidadores: [{ ...cuidadores[2]!, eh_dono: true }],
     },
   ],
   medicamentos: [
@@ -200,7 +206,12 @@ export const demo = {
     const nasc = new Date(dados.data_nascimento);
     const idade = Math.max(0, Math.floor((Date.now() - nasc.getTime()) / (365.25 * 86400000)));
     const criador = estado.cuidadores.find((c) => c.id === estado.cuidadorAtual);
-    const i: Idoso = { id: novoId(), ...dados, idade, cuidadores: criador ? [criador] : [] };
+    const i: Idoso = {
+      id: novoId(),
+      ...dados,
+      idade,
+      cuidadores: criador ? [{ ...criador, eh_dono: true }] : [],
+    };
     estado.idosos.push(i);
     return i;
   },
@@ -245,13 +256,61 @@ export const demo = {
     const i = demo.obterIdoso(convite.idoso_id);
     const cuidadorAtual = estado.cuidadores.find((c) => c.id === estado.cuidadorAtual);
     if (cuidadorAtual && !i.cuidadores.some((c) => c.id === cuidadorAtual.id)) {
-      i.cuidadores.push(cuidadorAtual);
+      i.cuidadores.push({ ...cuidadorAtual, eh_dono: false });
     }
   },
   recusarConvite: (id: number) => {
     const convite = estado.convites.find((c) => c.id === id);
     if (convite) convite.status = "recusado";
   },
+  desvincularCuidador: (idosoId: number, cuidadorId: number) => {
+    const i = demo.obterIdoso(idosoId);
+    const atualId = estado.cuidadorAtual;
+    if (atualId === null) {
+      throw { __apiErro: true, status: 401, mensagem: "É preciso estar logado." };
+    }
+    const alvo = i.cuidadores.find((c) => c.id === cuidadorId);
+    if (!alvo) {
+      throw {
+        __apiErro: true,
+        status: 404,
+        mensagem: "Cuidador não encontrado neste idoso.",
+      };
+    }
+    const ehAuto = cuidadorId === atualId;
+    const dono = i.cuidadores.find((c) => c.eh_dono);
+    if (!ehAuto && dono?.id !== atualId) {
+      throw {
+        __apiErro: true,
+        status: 403,
+        mensagem: "Só o cuidador que cadastrou o idoso pode remover outros cuidadores.",
+      };
+    }
+    const remanescentes = i.cuidadores.filter((c) => c.id !== cuidadorId);
+    if (alvo.eh_dono) {
+      if (remanescentes.length > 0) remanescentes[0]!.eh_dono = true;
+    } else if (ehAuto && remanescentes.length === 0) {
+      throw {
+        __apiErro: true,
+        status: 409,
+        mensagem: "Não é possível sair: você é o único cuidador vinculado a este idoso.",
+      };
+    }
+    i.cuidadores = remanescentes;
+    const executor = estado.cuidadores.find((c) => c.id === atualId) ?? null;
+    estado.historicoVinculo.push({
+      id: novoId(),
+      idoso_id: idosoId,
+      cuidador: { ...alvo },
+      tipo_evento: ehAuto ? "saiu" : "removido",
+      realizado_por: ehAuto ? null : executor,
+      criado_em: new Date().toISOString(),
+    });
+  },
+  listarHistoricoVinculo: (idosoId: number) =>
+    estado.historicoVinculo
+      .filter((e) => e.idoso_id === idosoId)
+      .sort((a, b) => b.criado_em.localeCompare(a.criado_em)),
   listarMedicamentos: (idosoId: number) =>
     estado.medicamentos.filter((m) => m.idoso_id === idosoId && m.ativo),
   criarMedicamento: (idosoId: number, dados: NovoMedicamento) => {
