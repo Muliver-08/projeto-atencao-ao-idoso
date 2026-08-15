@@ -120,39 +120,39 @@ Construir o alicerce do projeto: monorepo com backend FastAPI+SQLAlchemy 2.0 (sy
 
 ## Phase 5: Frontend — telas e integração
 ### Tasks
-- [ ] Criar `frontend/src/lib/api.ts` — instância axios (`baseURL: import.meta.env.VITE_API_URL`, `withCredentials: true`)
-- [ ] Configurar `frontend/src/main.tsx` com `createBrowserRouter` (rotas: `/`, `/idosos`, `/cuidadores`)
-- [ ] Instalar componentes shadcn necessários (`form`, `input`, `select`, `card`, `table`, `alert`)
-- [ ] Criar `frontend/src/pages/Idosos.tsx` — listar/cadastrar idoso
-- [ ] Criar `frontend/src/pages/Cuidadores.tsx` — listar/cadastrar cuidador, vincular a idoso
-- [ ] Criar `frontend/src/components/SeletorCuidador.tsx` — chama `POST /sessao` / `GET /sessao`
-- [ ] Tratamento de erro de conexão (try/catch no axios, `Alert` do shadcn com mensagem legível, nunca tela branca — RNF05)
-- [ ] Validação de formulário (campos obrigatórios, feedback inline — RNF04)
+- [x] Criar `frontend/src/lib/api.ts` — instância axios (`baseURL: import.meta.env.VITE_API_URL`, `withCredentials: true`)
+- [x] Configurar `frontend/src/main.tsx` com `createBrowserRouter` (rotas: `/`, `/idosos`, `/cuidadores`)
+- [x] Instalar componentes shadcn necessários (`input`, `select`, `card`, `table`, `alert`) — `form` indisponível no registry desta stack (base-ui/`base-nova`), ver Amendments
+- [x] Criar `frontend/src/pages/Idosos.tsx` — listar/cadastrar idoso
+- [x] Criar `frontend/src/pages/Cuidadores.tsx` — listar/cadastrar cuidador, vincular a idoso
+- [x] Criar `frontend/src/components/SeletorCuidador.tsx` — chama `POST /sessao` / `GET /sessao`
+- [x] Tratamento de erro de conexão (try/catch no axios, `Alert` do shadcn com mensagem legível, nunca tela branca — RNF05)
+- [x] Validação de formulário (campos obrigatórios, feedback inline — RNF04)
 
 ### Success Criteria
 #### Automated Verification
-- [ ] `cd frontend && pnpm exec tsc --noEmit` sem erros
-- [ ] `cd frontend && pnpm build` completa sem erro
+- [x] `cd frontend && pnpm exec tsc --noEmit` sem erros
+- [x] `cd frontend && pnpm build` completa sem erro
 
 #### Manual Verification
-- [ ] Com backend rodando: cadastrar idoso, cadastrar cuidador, vincular, selecionar cuidador atual — tudo funcional pela UI
-- [ ] Desligar o backend e confirmar que a UI mostra mensagem de erro, não quebra/tela branca
-- [ ] Cookie de sessão aparece nas DevTools como `HttpOnly` (não acessível via `document.cookie`)
+- [x] Com backend rodando: cadastrar idoso, cadastrar cuidador, vincular, selecionar cuidador atual — tudo funcional pela UI
+- [x] Desligar o backend e confirmar que a UI mostra mensagem de erro, não quebra/tela branca
+- [x] Cookie de sessão aparece nas DevTools como `HttpOnly` (não acessível via `document.cookie`)
 
 ---
 
 ## Phase 6: Verificação end-to-end
 ### Tasks
-- [ ] Rodar backend e frontend simultaneamente em portas diferentes, confirmar CORS funcionando (origem explícita, `Access-Control-Allow-Credentials: true`)
-- [ ] Percorrer os critérios de aceitação do PRD (seção 9) um a um
+- [x] Rodar backend e frontend simultaneamente em portas diferentes, confirmar CORS funcionando (origem explícita, `Access-Control-Allow-Credentials: true`)
+- [x] Percorrer os critérios de aceitação do PRD (seção 9) um a um
 
 ### Success Criteria
 #### Automated Verification
-- [ ] `cd backend && uv run pytest` — passa
-- [ ] `cd frontend && pnpm exec tsc --noEmit && pnpm build` — passa
+- [x] `cd backend && uv run pytest` — passa
+- [x] `cd frontend && pnpm exec tsc --noEmit && pnpm build` — passa
 
 #### Manual Verification
-- [ ] Todos os itens da seção "Critérios de aceitação" do PRD confirmados manualmente
+- [x] Todos os itens da seção "Critérios de aceitação" do PRD confirmados manualmente
 
 ---
 
@@ -161,6 +161,8 @@ Construir o alicerce do projeto: monorepo com backend FastAPI+SQLAlchemy 2.0 (sy
 - **Cuidador.telefone com validação de formato** (RNF04): `CuidadorCreate.telefone` exige regex `^\(\d{2}\) \d{4,5}-\d{4}$` (celular `(51) 99999-9999` ou fixo `(51) 3333-4444`); qualquer outro formato retorna 422.
 - Migration `3350335ecce2` aplica a troca de coluna (`idade` → `data_nascimento`) — tabela estava vazia (só dados de teste) no momento, sem necessidade de backfill.
 - Frontend (Phase 5) deve usar input de data (não number) pra `data_nascimento` e máscara/validação de telefone no formato `(xx) xxxxx-xxxx`.
+- **Fase 4**: `pyproject.toml` ganhou `[tool.pytest.ini_options] pythonpath = ["."]` — sem isso pytest não resolve o pacote `app`. Testes de sessão usam banco `atencao_idoso_test` (criado automaticamente pelo `conftest.py` se não existir), com isolamento via `Session(bind=connection, join_transaction_mode="create_savepoint")` + rollback por teste.
+- **Fase 5**: o componente shadcn `form` não existe no registry desta stack (`style: base-nova`, base-ui em vez de Radix) — `pnpm dlx shadcn add form` roda sem erro mas não gera arquivo. Formulários de `Idosos.tsx`/`Cuidadores.tsx` usam estado controlado simples (`useState` + validação manual no `handleSubmit`) em vez de `react-hook-form`/`zod`, sem adicionar essas dependências (fora do que a Spec listava). `react-router` instalado é v8 (Spec previa v7); API `createBrowserRouter`/`RouterProvider` é a mesma, mas `RouterProvider` migrou para o subpath `react-router/dom`. `App.tsx`/`App.css` (boilerplate do Vite) foram removidos por ficarem órfãos após `main.tsx` passar a montar `RouterProvider` diretamente.
 
 ## Testing Notes
 - Unit/integration tests: pytest + `TestClient` (backend), cobrindo `idosos`, `cuidadores`, `sessao`
