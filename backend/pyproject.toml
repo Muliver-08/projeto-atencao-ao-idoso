@@ -11,6 +11,8 @@ dependencies = [
     "alembic",
     "itsdangerous",
     "pydantic-settings",
+    "bcrypt",
+    "email-validator",
 ]
 
 [dependency-groups]

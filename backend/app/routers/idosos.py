@@ -15,6 +15,8 @@ def criar_idoso(
     db: Session = Depends(get_db),
     cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
 ) -> IdosoRead:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
         return idoso_service.criar_idoso(db, dados, cuidador_atual_id)
     except HTTPException:
@@ -26,9 +28,14 @@ def criar_idoso(
 
 
 @router.get("", response_model=list[IdosoRead])
-def listar_idosos(db: Session = Depends(get_db)) -> list[IdosoRead]:
+def listar_idosos(
+    db: Session = Depends(get_db),
+    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
+) -> list[IdosoRead]:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
-        return idoso_service.listar_idosos(db)
+        return idoso_service.listar_idosos(db, cuidador_atual_id)
     except HTTPException:
         raise
     except Exception:
@@ -38,9 +45,15 @@ def listar_idosos(db: Session = Depends(get_db)) -> list[IdosoRead]:
 
 
 @router.get("/{idoso_id}", response_model=IdosoRead)
-def obter_idoso(idoso_id: int, db: Session = Depends(get_db)) -> IdosoRead:
+def obter_idoso(
+    idoso_id: int,
+    db: Session = Depends(get_db),
+    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
+) -> IdosoRead:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
-        return idoso_service.obter_idoso(db, idoso_id)
+        return idoso_service.obter_idoso(db, idoso_id, cuidador_atual_id)
     except HTTPException:
         raise
     except Exception:

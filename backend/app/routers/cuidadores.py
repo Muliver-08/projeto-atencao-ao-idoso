@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -26,7 +26,12 @@ def criar_cuidador(
 
 
 @router.get("/cuidadores", response_model=list[CuidadorRead])
-def listar_cuidadores(db: Session = Depends(get_db)) -> list[CuidadorRead]:
+def listar_cuidadores(
+    db: Session = Depends(get_db),
+    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
+) -> list[CuidadorRead]:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
         return cuidador_service.listar_cuidadores(db)
     except HTTPException:
@@ -35,23 +40,3 @@ def listar_cuidadores(db: Session = Depends(get_db)) -> list[CuidadorRead]:
         raise HTTPException(
             status_code=500, detail="Não foi possível listar os cuidadores."
         )
-
-
-@router.post("/idosos/{idoso_id}/cuidadores/{cuidador_id}", status_code=204)
-def vincular_cuidador(
-    idoso_id: int,
-    cuidador_id: int,
-    db: Session = Depends(get_db),
-    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
-) -> Response:
-    try:
-        cuidador_service.vincular_cuidador(
-            db, idoso_id, cuidador_id, cuidador_atual_id
-        )
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(
-            status_code=500, detail="Não foi possível vincular o cuidador ao idoso."
-        )
-    return Response(status_code=204)

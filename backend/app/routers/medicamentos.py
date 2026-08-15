@@ -25,8 +25,10 @@ def criar_medicamento(
     db: Session = Depends(get_db),
     cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
 ) -> MedicamentoCriado:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
-        idoso_service.obter_idoso(db, idoso_id)
+        idoso_service.obter_idoso(db, idoso_id, cuidador_atual_id)
 
         interacao = interacao_service.verificar_interacao(
             db, idoso_id, dados.principio_ativo
@@ -66,10 +68,14 @@ def criar_medicamento(
 
 @router.get("/idosos/{idoso_id}/medicamentos", response_model=list[MedicamentoRead])
 def listar_medicamentos(
-    idoso_id: int, db: Session = Depends(get_db)
+    idoso_id: int,
+    db: Session = Depends(get_db),
+    cuidador_atual_id: int | None = Depends(get_cuidador_atual_id),
 ) -> list[MedicamentoRead]:
+    if cuidador_atual_id is None:
+        raise HTTPException(status_code=401, detail="É preciso estar logado.")
     try:
-        idoso_service.obter_idoso(db, idoso_id)
+        idoso_service.obter_idoso(db, idoso_id, cuidador_atual_id)
         return medicamento_service.listar_medicamentos(db, idoso_id)
     except HTTPException:
         raise
