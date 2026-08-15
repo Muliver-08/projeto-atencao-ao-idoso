@@ -4,6 +4,7 @@ import type {
   Convite,
   Cuidador,
   Dose,
+  EventoVinculo,
   Idoso,
   Interacao,
   Medicamento,
@@ -204,6 +205,18 @@ export const api = {
         await http.post(`/convites/${id}/recusar`);
       },
       () => demo.recusarConvite(id),
+    ),
+  desvincularCuidador: (idosoId: number, cuidadorId: number) =>
+    chamar<void>(
+      async () => {
+        await http.delete(`/idosos/${idosoId}/cuidadores/${cuidadorId}`);
+      },
+      () => demo.desvincularCuidador(idosoId, cuidadorId),
+    ),
+  listarHistoricoVinculo: (idosoId: number) =>
+    chamar<EventoVinculo[]>(
+      async () => (await http.get(`/idosos/${idosoId}/historico-vinculo`)).data,
+      () => demo.listarHistoricoVinculo(idosoId),
     ),
 
   listarMedicamentos: (idosoId: number) =>

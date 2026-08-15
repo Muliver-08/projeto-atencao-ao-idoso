@@ -2,7 +2,7 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.cuidador import CuidadorRead
+from app.schemas.cuidador import CuidadorVinculado
 
 
 class IdosoCreate(BaseModel):
@@ -26,4 +26,4 @@ class IdosoRead(BaseModel):
     data_nascimento: date
     idade: int
     observacoes: str | None
-    cuidadores: list[CuidadorRead]
+    cuidadores: list[CuidadorVinculado]

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.main import app
-from app.models import cuidador, idoso, convite_vinculo  # noqa: F401 - registra tabelas no metadata
+from app.models import cuidador, idoso, convite_vinculo, historico_vinculo  # noqa: F401 - registra tabelas no metadata
 from app.models.base import Base
 
 _TEST_DB_URL = make_url(settings.DATABASE_URL).set(
