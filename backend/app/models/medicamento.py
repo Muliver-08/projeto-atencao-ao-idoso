@@ -1,9 +1,22 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+
+TOLERANCIA_ATRASO_MINUTOS = 30
+
+
+def calcular_horario_previsto(
+    horario: time, frequencia_horas: int, agora: datetime
+) -> datetime:
+    ancora = datetime.combine(agora.date(), horario)
+    if ancora > agora:
+        ancora -= timedelta(days=1)
+    intervalo = timedelta(hours=frequencia_horas)
+    passos = (agora - ancora) // intervalo
+    return ancora + passos * intervalo
 
 
 class Medicamento(Base):
@@ -22,3 +35,16 @@ class Medicamento(Base):
     criado_por_cuidador_id: Mapped[int | None] = mapped_column(
         ForeignKey("cuidadores.id")
     )
+
+    @property
+    def proximo_horario_previsto(self) -> datetime:
+        return calcular_horario_previsto(
+            self.horario, self.frequencia_horas, datetime.now()
+        )
+
+    @property
+    def atrasado(self) -> bool:
+        limite = self.proximo_horario_previsto + timedelta(
+            minutes=TOLERANCIA_ATRASO_MINUTOS
+        )
+        return datetime.now() > limite

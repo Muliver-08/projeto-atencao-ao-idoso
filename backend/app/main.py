@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
-from app.routers import cuidadores, idosos, medicamentos, sessao
+from app.routers import cuidadores, idosos, medicamentos, registros_dose, sessao
 
 app = FastAPI()
 
@@ -26,6 +26,7 @@ app.add_middleware(
 app.include_router(idosos.router)
 app.include_router(cuidadores.router)
 app.include_router(medicamentos.router)
+app.include_router(registros_dose.router)
 app.include_router(sessao.router)
 
 
