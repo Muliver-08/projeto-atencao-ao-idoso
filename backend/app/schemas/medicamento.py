@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -36,6 +36,8 @@ class MedicamentoRead(BaseModel):
     frequencia_horas: int
     registro_ms: str | None
     ativo: bool
+    proximo_horario_previsto: datetime
+    atrasado: bool
 
 
 class MedicamentoCriado(BaseModel):
