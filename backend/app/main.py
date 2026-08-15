@@ -15,11 +15,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_cross_site = settings.CORS_ORIGIN.startswith("https://")
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET_KEY,
-    https_only=False,
-    same_site="lax",
+    https_only=_cross_site,
+    same_site="none" if _cross_site else "lax",
     max_age=86400,
 )
 
